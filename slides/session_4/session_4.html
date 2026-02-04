@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>R Professional Skills Course — Session 4</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Marc-Andrea Fiorina" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/panelset/panelset.css" rel="stylesheet" />
+    <script src="libs/panelset/panelset.js"></script>
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+    <link rel="stylesheet" href="hygge.css" type="text/css" />
+    <link rel="stylesheet" href="custom_css.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+
+
+
+
+class: center, middle
+
+# Programming for Professional Research Using R
+
+## Session 4
+
+### November 12, 2025
+
+---
+
+class: middle
+
+## Today
+
+- Learn how to:
+    - Create custom functions
+    - Use iterative coding in R using:
+        - The "for" loop
+        - The `across()` function
+        - The `map()` function from the `purrr` package
+   
+- Be introduced to:
+    - Communicating process and results using R Markdown
+
+- Practice the above!
+
+---
+
+### Functions in R
+
+What is a function?
+
+A function allows you to efficiently save an operation you may have to use repeatedly, and to run it while only having to modify its inputs, or **arguments**.
+
+I want to rescale the vectors a, b, c, and d so that the smallest value is 0 and the largest value is 1.
+Here's how I would do it in R:
+
+
+``` r
+(a-min(a, na.rm = TRUE)) / (max(a, na.rm = TRUE)-min(a, na.rm = TRUE))
+(b-min(b, na.rm = TRUE)) / (max(b, na.rm = TRUE)-min(b, na.rm = TRUE))
+(c-min(c, na.rm = TRUE)) / (max(c, na.rm = TRUE)-min(c, na.rm = TRUE))
+(d-min(d, na.rm = TRUE)) / (max(d, na.rm = TRUE)-min(d, na.rm = TRUE))
+```
+
+This is not considered good coding; it requires a lot of copying/pasting, it increases the number of opportunities to make a typo mistake, and it is not efficient.
+
+---
+
+### Functions in R
+
+Solution: custom functions. Custom functions in R are written in the following manner:
+
+
+``` r
+name &lt;- function(arguments) {
+  body
+}
+```
+
+In the case of our reshaping function, it would look like this:
+
+
+``` r
+# Example for the argument a:
+# (a-min(a, na.rm = TRUE)) / (max(a, na.rm = TRUE)-min(a, na.rm = TRUE))
+
+reshape_function &lt;- function(x) {
+  (x-min(x,na.rm = TRUE)) / (max(x,na.rm = TRUE)-min(x,na.rm = TRUE))
+}
+reshape_function(c(-10, 0, 10))
+```
+
+```
+## [1] 0.0 0.5 1.0
+```
+
+``` r
+reshape_function(c(1, 2, 3, 4, 5))
+```
+
+```
+## [1] 0.00 0.25 0.50 0.75 1.00
+```
+
+---
+
+### Iterative Functions in R
+
+What if I want to apply the same function to multiple objects?
+
+What if I wanted to apply `reshape_function`() to 30 variables in my dataset? Rewriting it would be inefficient...
+
+A possible, base R solution: use a "for" loop.
+
+
+``` r
+for(vector in list(c(-10, 0, 10), c(1, 2, 3, 4, 5))) {
+    new_vector &lt;- reshape_function(vector)
+    print(new_vector)
+}
+```
+
+```
+## [1] 0.0 0.5 1.0
+## [1] 0.00 0.25 0.50 0.75 1.00
+```
+
+However, the use of "for" loops is discouraged in R because they have to run sequentially through each element of the object. To loop over large objects, this is much slower than alternative options, which directly apply to the whole object.
+
+---
+
+### Iterative Functions in R
+
+A more efficient solution: the function `map()` from the package `purrr`.
+
+
+``` r
+library(purrr)
+purrr::map(
+    .x = list(
+        c(-10, 0, 10), c(1, 2, 3, 4, 5)
+    ),
+    .f = reshape_function
+)
+```
+
+```
+## [[1]]
+## [1] 0.0 0.5 1.0
+## 
+## [[2]]
+## [1] 0.00 0.25 0.50 0.75 1.00
+```
+
+---
+
+### Iterative Functions in R
+
+`map()` has a shorthand to simplify its use: instead of writing the function out, you can replace `function() {}` with `\(argument)` and the function's argument with `argument` ("argument" can be replaced with whatever you want).
+
+.pull-left[
+
+``` r
+c(1, 3) %&gt;%
+  map(
+    function(x) {
+        x + 10
+    }
+  ) %&gt;%
+  as.character()
+```
+
+```
+## [1] "11" "13"
+```
+]
+.pull-right[
+
+``` r
+c(1, 3) %&gt;%
+  map(
+    \(vlu) vlu + 10
+  ) %&gt;%
+  as.character()
+```
+
+```
+## [1] "11" "13"
+```
+]
+
+---
+
+### Iterative Functions in R
+
+We can also apply `map()` to a data frame. If we do so, `map()` will apply the same function to every component of the data frame, i.e. its **columns**. In practice, this is equivalent to applying `map()` to a list of vectors.
+
+
+``` r
+library(palmerpenguins, warn.conflicts = FALSE) # A fun practice dataset about penguins!
+data(package = 'palmerpenguins')
+# Let's take a glimpse at the dataset:
+penguins %&gt;% glimpse()
+```
+
+```
+## Rows: 344
+## Columns: 8
+## $ species           &lt;fct&gt; Adelie, Adelie, Adelie, Adelie, Adelie, Adelie, Adel…
+## $ island            &lt;fct&gt; Torgersen, Torgersen, Torgersen, Torgersen, Torgerse…
+## $ bill_length_mm    &lt;dbl&gt; 39.1, 39.5, 40.3, NA, 36.7, 39.3, 38.9, 39.2, 34.1, …
+## $ bill_depth_mm     &lt;dbl&gt; 18.7, 17.4, 18.0, NA, 19.3, 20.6, 17.8, 19.6, 18.1, …
+## $ flipper_length_mm &lt;int&gt; 181, 186, 195, NA, 193, 190, 181, 195, 193, 190, 186…
+## $ body_mass_g       &lt;int&gt; 3750, 3800, 3250, NA, 3450, 3650, 3625, 4675, 3475, …
+## $ sex               &lt;fct&gt; male, female, female, NA, female, male, female, male…
+## $ year              &lt;int&gt; 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007…
+```
+
+---
+
+### Iterative Functions in R
+
+I want to reshape the numerical variables of the `penguins` dataset. Using `map()`:
+
+
+``` r
+penguins_reshaped &lt;- penguins %&gt;%
+  map(
+    \(col) {
+      if(is.numeric(col)) {
+        reshape_function(col)
+      }
+      col
+    }
+  ) %&gt;% as_tibble()
+penguins_reshaped %&gt;% glimpse()
+```
+
+```
+## Rows: 344
+## Columns: 8
+## $ species           &lt;fct&gt; Adelie, Adelie, Adelie, Adelie, Adelie, Adelie, Adel…
+## $ island            &lt;fct&gt; Torgersen, Torgersen, Torgersen, Torgersen, Torgerse…
+## $ bill_length_mm    &lt;dbl&gt; 39.1, 39.5, 40.3, NA, 36.7, 39.3, 38.9, 39.2, 34.1, …
+## $ bill_depth_mm     &lt;dbl&gt; 18.7, 17.4, 18.0, NA, 19.3, 20.6, 17.8, 19.6, 18.1, …
+## $ flipper_length_mm &lt;int&gt; 181, 186, 195, NA, 193, 190, 181, 195, 193, 190, 186…
+## $ body_mass_g       &lt;int&gt; 3750, 3800, 3250, NA, 3450, 3650, 3625, 4675, 3475, …
+## $ sex               &lt;fct&gt; male, female, female, NA, female, male, female, male…
+## $ year              &lt;int&gt; 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007…
+```
+
+---
+
+### Iterative Functions in R
+
+The `dplyr` package offers us a function that makes it much easier to modify multiple dataset columns at once: `across()`:
+
+
+``` r
+penguins_reshaped &lt;- penguins %&gt;%
+  mutate(
+    across(
+      c(bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g),
+      \(var) reshape_function(var)
+    )
+  )
+penguins_reshaped %&gt;% glimpse()
+```
+
+```
+## Rows: 344
+## Columns: 8
+## $ species           &lt;fct&gt; Adelie, Adelie, Adelie, Adelie, Adelie, Adelie, Adel…
+## $ island            &lt;fct&gt; Torgersen, Torgersen, Torgersen, Torgersen, Torgerse…
+## $ bill_length_mm    &lt;dbl&gt; 0.25454545, 0.26909091, 0.29818182, NA, 0.16727273, …
+## $ bill_depth_mm     &lt;dbl&gt; 0.6666667, 0.5119048, 0.5833333, NA, 0.7380952, 0.89…
+## $ flipper_length_mm &lt;dbl&gt; 0.15254237, 0.23728814, 0.38983051, NA, 0.35593220, …
+## $ body_mass_g       &lt;dbl&gt; 0.2916667, 0.3055556, 0.1527778, NA, 0.2083333, 0.26…
+## $ sex               &lt;fct&gt; male, female, female, NA, female, male, female, male…
+## $ year              &lt;int&gt; 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007…
+```
+
+---
+
+`across()` identifies columns by name, or can be combined with `where()` to identify columns by their class. The following are equivalent:
+
+
+``` r
+penguins %&gt;%
+  mutate(
+    across(
+      c(bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g, year),
+      \(var) reshape_function(var)
+    )
+  )
+penguins %&gt;%
+  mutate(
+    across(
+      matches("length_mm|depth_mm|body_mass|year"),
+      \(var) reshape_function(var)
+    )
+  )
+penguins %&gt;%
+  mutate(
+    across(
+      where(is.numeric),
+      \(var) reshape_function(var)
+    )
+  )
+```
+
+---
+
+### Iterative Functions in R
+
+Beyond the scope of this class: sometimes we want to iterate functions that have more than one argument.
+
+To do so, `purrr` provides the following functions: `map2()` (two arguments) and `pmap()` (unlimited arguments)
+
+
+``` r
+animals &lt;- c("tiger", "elephant", "giraffe")
+colors &lt;- c("red", "orange", "blue")
+map2( # paste0() concatenates its arguments into a single string
+    animals, colors, \(anm, clr) paste0("The ", anm, " is ", clr, ".")
+)
+```
+
+```
+## [[1]]
+## [1] "The tiger is red."
+## 
+## [[2]]
+## [1] "The elephant is orange."
+## 
+## [[3]]
+## [1] "The giraffe is blue."
+```
+
+For more on iterative functions, I strongly recommend [this blog post by Rebecca Barter](https://www.rebeccabarter.com/blog/2019-08-19_purrr).
+
+---
+
+### A (Quick) Introduction to R Markdown
+
+RStudio comes with a text and code compiler that allows you to craft narrated scripts, slide decks, blogs, books, and more: R Markdown.
+
+Instead of creating an R Script, you can select "R Markdown" when creating a new document in RStudio.
+
+R Markdown allows you to use the **["markdown" markup language](https://commonmark.org/help/)** to format your text, while include code and outputs using code "chunks":
+
+&lt;img src="pics/rmarkdown_example.png" width="90%" style="display: block; margin: auto;" /&gt;
+
+---
+
+class: middle
+
+### A (Quick) Introduction to Quarto
+
+Quarto is a brand new publishing system from the RStudio creators, intended to improve on R Markdown. It allows to combine different coding languages (e.g. both R and Python) into reports, slide decks, websites, etc.
+
+See [https://quarto.org/](https://quarto.org/) for more information.
+
+---
+
+class: center, middle
+
+## Practical Exercise — Using the World Values Survey Dataset
+
+---
+&lt;font size='+3'&gt;&lt;b&gt;World Values Survey&lt;/b&gt;&lt;/font&gt;
+
+&lt;font size='+2'&gt;&lt;b&gt;Background&lt;/b&gt;&lt;/font&gt;
+&lt;br&gt; &lt;br&gt;
+*"The survey, which started in 1981, seeks to use the most rigorous, high-quality research designs in each country. The WVS consists of nationally representative surveys conducted in almost 100 countries which contain almost 90 percent of the world’s population, using a common questionnaire. [...] WVS seeks to help scientists and policy makers understand changes in the beliefs, values and motivations of people throughout the world."*
+
+&lt;font size='+2'&gt;&lt;b&gt;Survey Contents&lt;/b&gt;&lt;/font&gt;
+.pull-left[
+- Social values, attitudes &amp; stereotypes
+- Societal well-being
+- Social capital, trust and organizational membership
+- Economic values
+- Corruption
+- Migration
+- Post-materialist index
+]
+
+.pull-right[
+- Science &amp; technology
+- Religious values
+- Security
+- Ethical values &amp; norms
+- Political interest and political participation
+- Political culture and political regimes
+- Demography
+]
+
+---
+
+class: middle
+
+### Today's practical component
+
+1. Successfully **fix** the code in the `session_4.R` script.
+
+2. Work on your final assignment! The final assignment is to complete the Session 2, 3, and 4 challenges. You can find the challenges rewritten together on the next slide.
+    
+**NOTE** — You should refer to documentation for the dataset, which can be found at [https://mfiorina.github.io/sais_r_course/](https://mfiorina.github.io/sais_r_course/)
+
+---
+
+### End of Course Assignment (**Due on Wednesday, November 26**)
+
+.panelset[
+
+.panel[.panel-name[Session 2 Challenge]
+
+Using child_values_country_data, create a scatter plot showing an interesting comparison between two child values across countries.
+  
+Using child_values_continent_data, create a bar plot comparing a specific child value across continents.
+  
+Using child_values_continent_data, create a `gt` table showcasing the same data as in your bar plot.
+
+]
+
+.panel[.panel-name[Session 3 Challenge]
+
+Create your own script and do the following:
+      
+1. Find mean values for 'importance in life' variables (Q1-6) for countries in another region than Europe
+
+2. Calculate average 'enthusiasm' for these life subjects in countries in that non-Europe region
+  
+3. Perform the same analysis, either on European countries or other countries, for one of the following group of indicators in the dataset:
+    - Important child qualities: Q7-17
+    - Neighbors: Q18-26
+    - Statements to agree with: Q27-41
+  
+4. Save one dataset for each of the tasks above.
+
+]
+
+.panel[.panel-name[Session 4 Challenge]
+
+CHALLENGE 1 — You are going to use the map() function to rewrite the data importing code below.
+Currently, the code loads year-by-year datasets individually and then uses bind_rows() to bring them together. Modify it to use map() and list_rbind() instead.
+Remember to use help(...) if you're unsure how a function works.
+
+CHALLENGE 2 — You are going to rewrite the data wrangling section from Session 3, replacing repetitive code with more efficient uses of the across() function.
+Hint — Steps 1, 2, and 5 shouldn't be affected. Focus on rewriting Steps 3 and 4 to be more efficient.
+
+]
+
+.panel[.panel-name[Overall]
+
+Final deliverable: a .zip file of the the "&lt;b&gt;&lt;span style = "color:red"&gt;your name&lt;/span&gt;&lt;/b&gt; R Course Final Assignment" folder. It should have the following:
+- An .rproj file in the main folder.
+
+- "code", "data", and "output" folders.
+
+- Three scripts in the "code" folder: `session_2_assignment.R`, `session_3_assignment.R`, and `session_4_assignment.R`. You can use the `session_2.R`, `session_3.R`, and `session_4.R` scripts as foundations for your assignment scripts.
+
+- The requisite data in the "data" folder. You should just need the data from the three sessions, which you should have already downloaded.
+
+- The outputs from your `session_2_assignment.R` script in the "output" folder.
+
+]
+
+]
+
+---
+
+class: middle
+
+# Course Feedback
+
+## [https://forms.gle/TbaSCbqqKAfpjtF59](https://forms.gle/TbaSCbqqKAfpjtF59)
+
+---
+
+## Links
+
+Hadley Wickham, Mine Çetinkaya-Rundel &amp; Garrett Grolemund, **[R for Data Science, 2e — Custom Functions](https://r4ds.hadley.nz/functions)**
+
+Hadley Wickham, **[“dplyr 1.0.0: working across columns”](https://www.tidyverse.org/blog/2020/04/dplyr-1-0-0-colwise/)**
+
+Rebecca Barter, **["Learn to purrr"](https://www.rebeccabarter.com/blog/2019-08-19_purrr)**
+
+RStudio, **[RStudio Cheatsheets](https://www.rstudio.com/resources/cheatsheets/)**
+
+---
+
+## Explore R Further
+
+&lt;ins&gt;**More Complex Data Manipulation**&lt;/ins&gt;
+
+Iterative coding (using loops for repetitive code) – purrr ’s map function is your friend. I recommend Thomas Mock, **[“Functional programming in R with Purrr”](https://themockup.blog/posts/2018-12-11-functional-progamming-in-r-with-purrr/)** to get you started.
+
+User-made functions in R – At some point, it will become time-effective to create your own functions to apply to your work. Hadley Wickham, **[Advanced R Chapter 6 – Functions](https://advr.hadley.nz/functions.html)**.
+
+&lt;ins&gt;**Publishing Your R Work**&lt;/ins&gt;
+
+RStudio, **[“Introduction to RMarkdown”](https://rmarkdown.rstudio.com/lesson-1.html)**. Summarizes the uses and utility of the RMarkdown framework.
+
+Yihui Xie, **[“xaringan Presentations” – book chapter](https://bookdown.org/yihui/rmarkdown/xaringan.html)** and **[presentation](https://slides.yihui.org/xaringan/)**. Introduction to xaringan , a package
+that allows you to create slide decks using R. Also explore the **[xaringanExtra package](https://pkg.garrickadenbuie.com/xaringanExtra/#/)**.
+
+With RMarkdown, create books using **[bookdown](https://bookdown.org/)** or a blog using **[blogdown](https://bookdown.org/yihui/blogdown/)**.
+
+---
+
+## Explore R Further
+
+&lt;ins&gt;**Data Visualization Using Plots**&lt;/ins&gt;
+
+The R community organizes **[“Tidy Tuesday”](https://www.tidytuesday.com/)**. This is a weekly challenge where users are provided a dataset and participants then swap graphs and scripts used to create their visualizations.
+
+David Robinson’s **[Tidy Tuesday live screencasts](https://www.youtube.com/user/safe4democracy)** on YouTube. The perfect resource to follow along and try to replicate a professional coder’s scripts.
+
+Yan Holtz and Conor Healy, **[“From Data to Viz”](https://www.data-toviz.com/)**. An amazing repository of methods to create different data visualizations using R.
+
+---
+
+## Explore R Further
+
+&lt;ins&gt;**Geospatial Data Visualization**&lt;/ins&gt;
+
+Robin Lovelace, Jakub Nowosad, and Jannes Muenchow, **[Geocomputation with R](https://geocompr.robinlovelace.net/index.html)**. A great introduction to manipulating geospatial data (shapefiles and rasters) in R.
+
+Edzer Pebesma, **[“Simple Features for R”](https://rspatial.github.io/sf/articles/sf1.html)**. An introduction to the sf package, commonly used for geospatial work in R.
+
+Edzer Pebesma, **[“Plotting Simple Features”](https://rspatial.github.io/sf/articles/sf5.html)**. How to use sf and ggplot2 to visualize data using maps.
+
+---
+
+## Explore R Further
+
+For those interested in conducting data work in the development world: Kristoffer Bjarkefur, Luiza Cardoso de Andrade, Benjamin Daniels, and Maria Ruth Jones, **[Development Research in Practice – The DIME Analytics Data Handbook](https://worldbank.github.io/dime-data-handbook/)**. A comprehensive account of tools and instruments to conduct quantitative development research.
+
+For those looking for more hands-on, real-world data work: Ben Baldwin, **[“A beginner’s guide to nflfastR”](https://www.nflfastr.com/articles/beginners_guide.html)**. How to download and explore NFL play-by-play data. This is how I learnt how to use R. Further tutorials using this data can be found at the **[“Open Source Football” blog](https://www.opensourcefootball.com/)**.
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+  "highlightStyle": "github",
+  "highlightLines": true,
+  "countIncrementalSlides": false,
+  "slideNumberFormat": "%current%"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

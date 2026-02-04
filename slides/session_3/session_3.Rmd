@@ -1,0 +1,452 @@
+---
+title: "R Professional Skills Course — Session 3"
+subtitle: "Session 3"
+author: "Marc-Andrea Fiorina"
+date: "2024/11/06 (updated: `r Sys.Date()`)"
+output:
+  xaringan::moon_reader:
+    seal: false
+    css: ["xaringan-themer.css", "hygge.css", "custom_css.css"]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      slideNumberFormat: "%current%"
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+library(tidyverse)
+library(xaringanExtra)
+```
+
+```{r xaringan-themer, include=FALSE, warning=FALSE}
+library(xaringanthemer)
+style_duo_accent(
+  primary_color   = "#000000",
+  secondary_color = "#FFFFFF",
+  link_color      = "#0645AD",
+  header_font_google = google_font("Atkinson Hyperlegible"),
+  text_font_google   = google_font("Atkinson Hyperlegible"),
+  code_font_google   = google_font("Fira Code"),
+  code_inline_background_color = "#e7e8e1",
+  text_bold_color = NULL
+)
+```
+
+```{r xaringan-panelset, echo=FALSE}
+xaringanExtra::use_panelset()
+```
+
+class: center, middle
+
+# Programming for Professional Research Using R
+
+## Session 3
+
+### November 5, 2025
+
+---
+
+class: middle
+
+## Today
+
+- Learn how to:
+  - Filter, mutate, group, and summarize data using Tidyverse functions
+  - Reshape data using Tidyverse functions
+      
+- Be introduced to:
+  - The concept of a "tidy" dataset
+
+- Practice the above!
+
+---
+
+class: center, middle
+
+# Data Wrangling
+
+---
+
+### Tidyverse Introduction
+
+.panelset[
+
+.panel[.panel-name[Base R Layout]
+
+```{r}
+names(iris)
+```
+
+```{r}
+str_replace(str_to_lower(names(iris)), "\\.", "_")
+```
+
+]
+
+.panel[.panel-name[Tidyverse Layout]
+
+Tidyverse functions introduce a 'cleaner' method to write code out, using what is called the 'pipe operator': **`%>%`**. It's almost like writing a recipe, step by step.
+
+```{r}
+names(iris)
+```
+
+```{r}
+iris %>%
+  names() %>%
+  str_to_lower() %>%
+  str_replace("\\.", "_")
+```
+
+(Note — you can also write the pipe operator as **|>**)
+
+]
+
+]
+
+---
+
+### Basic Wrangling Functions
+
+.panelset[
+
+.panel[.panel-name[filter()]
+
+`filter()` is used to **extract** rows (a.k.a. observations) from a dataset. It does so using a logical condition.
+
+```{r}
+filter_example <- mtcars %>%
+  filter(wt > 3)
+
+filter_example %>% head()
+```
+
+]
+
+.panel[.panel-name[select()]
+
+`select()` is used to **extract** columns (a.k.a variables) from a dataset. It does so using the variable(s)'s name.
+
+```{r}
+select_example <- mtcars %>%
+  select(
+    mpg, carb
+  )
+select_example %>% head()
+```
+
+]
+
+.panel[.panel-name[mutate()]
+
+`mutate()` can be used to either **create** a new column (a.k.a. variable) or to **modify** an existing column (a.k.a. variable).
+
+```{r}
+mutate_example <- mtcars %>%
+  mutate(
+    heavy = case_when(
+      wt > 3 ~ "Yes",
+      TRUE   ~ "No"
+    )
+  )
+mutate_example %>% select(wt, heavy) %>% head()
+```
+
+]
+
+]
+
+---
+
+### Basic Wrangling Functions
+
+.panelset[
+
+.panel[.panel-name[group_by() and summarize()]
+
+`group_by()` and `summarize()` are used to **aggregate** data, i.e. to summarize information to a different level of observation.
+
+```{r}
+group_by_summarize_example <- mtcars %>%
+  group_by(cyl) %>%
+  summarize(
+    mpg = mean(mpg, na.rm = TRUE)
+  )
+
+group_by_summarize_example
+```
+
+]
+
+.panel[.panel-name[pivot_longer()]
+
+```{r}
+relig_income[1:6] %>% head(n = 2)
+relig_income_long <- relig_income %>%
+    pivot_longer(
+        cols      = !religion, # Everything but religion
+        names_to  = "levels",
+        values_to = "num"
+    )
+```
+
+]
+
+.panel[.panel-name[pivot_longer() result]
+
+```{r}
+relig_income[1:6] %>% head(n = 2)
+relig_income_long %>% head(n = 4)
+```
+
+]
+
+.panel[.panel-name[pivot_wider()]
+
+```{r}
+fish_encounters %>% head(n = 4)
+fish_encounters_wide <- fish_encounters %>%
+    pivot_wider(
+        names_from  = station,
+        values_from = seen
+    )
+```
+
+]
+
+.panel[.panel-name[pivot_wider() result]
+
+```{r}
+fish_encounters %>% head(n = 4)
+fish_encounters_wide[1:6] %>% head(n = 2)
+```
+
+]
+
+]
+
+---
+
+class: center, middle
+
+## Working with 'Tidy' Datasets
+
+---
+
+class: middle
+
+```
+table1
+#> # A tibble: 6 x 4
+#>   country      year  cases population
+#>   <chr>       <int>  <int>      <int>
+#> 1 Afghanistan  1999    745   19987071
+#> 2 Afghanistan  2000   2666   20595360
+#> 3 Brazil       1999  37737  172006362
+#> 4 Brazil       2000  80488  174504898
+#> 5 China        1999 212258 1272915272
+#> 6 China        2000 213766 1280428583
+
+table2
+#> # A tibble: 12 x 4
+#>   country      year type           count
+#>   <chr>       <int> <chr>          <int>
+#> 1 Afghanistan  1999 cases            745
+#> 2 Afghanistan  1999 population  19987071
+#> 3 Afghanistan  2000 cases           2666
+#> 4 Afghanistan  2000 population  20595360
+#> 5 Brazil       1999 cases          37737
+#> 6 Brazil       1999 population 172006362
+#> # … with 6 more rows
+```
+
+---
+
+class: middle
+
+```
+table3
+#> # A tibble: 6 x 3
+#>   country      year rate             
+#> * <chr>       <int> <chr>            
+#> 1 Afghanistan  1999 745/19987071     
+#> 2 Afghanistan  2000 2666/20595360    
+#> 3 Brazil       1999 37737/172006362  
+#> 4 Brazil       2000 80488/174504898  
+#> 5 China        1999 212258/1272915272
+#> 6 China        2000 213766/1280428583
+
+# Spread across two tibbles
+table4a  # cases
+#> # A tibble: 3 x 3
+#>   country     `1999` `2000`
+#> * <chr>        <int>  <int>
+#> 1 Afghanistan    745   2666
+#> 2 Brazil       37737  80488
+#> 3 China       212258 213766
+table4b  # population
+#> # A tibble: 3 x 3
+#>   country         `1999`     `2000`
+#> * <chr>            <int>      <int>
+#> 1 Afghanistan   19987071   20595360
+#> 2 Brazil       172006362  174504898
+#> 3 China       1272915272 1280428583
+```
+
+---
+
+class: middle
+
+These are all useable versions of the same data. Only one of them, however, is 'tidy'.
+
+What makes a dataset 'tidy'? From Hadley Wickham, Mine Çetinkaya-Rundel, and Garrett Grolemund, [*R for Data Science (2e)* Chapter 5 — Tidy Tidying](https://r4ds.hadley.nz/data-tidy):
+
+1. Each **variable** must have **its own column**.
+2. Each **observation** must have **its own row**.
+3. Each **value** must have **its own cell**.
+
+Easier to think about when these conditions are *not* met:
+
+- When one variable is spread across multiple columns.
+
+- When one observation is scattered across multiple rows.
+
+`table1` is the tidy version of this dataset. How can we convert the other versions to be tidy?
+
+---
+
+.panelset[
+
+.panel[.panel-name[`table2`]
+
+```{r}
+table2 %>% head(n = 2)
+
+table2 %>%
+  pivot_wider(
+    names_from  = type,
+    values_from = count
+  ) %>% head(n = 4)
+  
+```
+]
+
+.panel[.panel-name[`table3`]
+
+```{r}
+table3 %>% head(n = 2)
+
+table3 %>%
+  mutate(
+    cases      = as.numeric(str_extract(rate, ".*(?=\\/)")),
+    population = as.numeric(str_extract(rate, "(?<=\\/).*"))
+  ) %>% select(-rate) %>% head(n = 4)
+  
+```
+]
+
+.panel[.panel-name[`table4`]
+
+```{r}
+table4a %>% head(n = 2)
+table4b %>% head(n = 2)
+```
+
+]
+
+.panel[.panel-name[`table4 results`]
+
+```{r}
+table4a %>%
+  pivot_longer(
+    cols      = c(`1999`, `2000`),
+    names_to  = "year",
+    values_to = "cases"
+  ) %>%
+  left_join(
+    table4b %>%
+      pivot_longer(
+        cols      = c(`1999`, `2000`),
+        names_to  = "year",
+        values_to = "population"
+      )
+  ) %>% head(n = 4)
+  
+```
+]
+
+]
+
+---
+
+class: center, middle
+
+## Practical Exercise — Using the World Values Survey Dataset
+
+---
+
+<font size='+3'><b>World Values Survey</b></font>
+
+<font size='+2'><b>Background</b></font>
+<br> <br>
+*"The survey, which started in 1981, seeks to use the most rigorous, high-quality research designs in each country. The WVS consists of nationally representative surveys conducted in almost 100 countries which contain almost 90 percent of the world’s population, using a common questionnaire. [...] WVS seeks to help scientists and policy makers understand changes in the beliefs, values and motivations of people throughout the world."*
+
+<font size='+2'><b>Survey Contents</b></font>
+.pull-left[
+- Social values, attitudes & stereotypes
+- Societal well-being
+- Social capital, trust and organizational membership
+- Economic values
+- Corruption
+- Migration
+- Post-materialist index
+]
+
+.pull-right[
+- Science & technology
+- Religious values
+- Security
+- Ethical values & norms
+- Political interest and political participation
+- Political culture and political regimes
+- Demography
+]
+
+---
+
+class: middle
+
+### Today's practical component
+
+1. Successfully run the code in the `session_3.R` script
+
+2. Create your own script and do the following:
+  
+    - Find mean values for 'importance in life' variables (Q1-6) for countries in another region than Europe
+  
+    - Calculate average 'enthusiasm' for these life subjects in countries in another region than Europe
+  
+    - Perform the same analysis, either on European countries or other countries, for another group of indicators in the dataset:
+        - Important child qualities: Q7-17
+        - Neighbors: Q18-26
+        - Statements to agree with: Q27-41
+    
+**NOTE** — You should refer to documentation for the dataset, which can be found at [https://mfiorina.github.io/sais_r_course/](https://mfiorina.github.io/sais_r_course/)
+
+---
+
+class: middle
+
+## Links
+
+Dominic Royé, **[“A very short introduction to Tidyverse”](https://dominicroye.github.io/en/2020/a-very-short-introduction-totidyverse/)**
+
+tidyr, **[“Pivoting”](https://tidyr.tidyverse.org/articles/pivot.html)**
+
+Hadley Wickham, Mine Çetinkaya-Rundel & Garrett Grolemund, **[R for Data Science, 2e](https://r4ds.hadley.nz/)**
+
+RStudio, **[RStudio Cheatsheets](https://www.rstudio.com/resources/cheatsheets/)**
+
