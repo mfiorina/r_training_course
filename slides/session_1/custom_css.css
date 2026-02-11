@@ -50,6 +50,18 @@
   width: 47%;
 }
 
+.pull-left-wide {
+  float: left;
+  padding-left: 0%;
+  width: 50%;
+}
+
+.pull-right-wide {
+  float: right;
+  padding-right: 0%;
+  width: 50%;
+}
+
 .left-center {
   position: relative;
   top: 50%;

@@ -23,11 +23,11 @@
 
 class: center, middle
 
-# Programming for Professional Research Using R
+# R Training
 
-## Session 2
+## Session 1
 
-### October 29, 2025
+### February 12, 2026
 
 ---
 
@@ -365,9 +365,7 @@ class: center, middle
 
 ## Descriptive Statistics Tables
 
-Thankfully, not every RA position requires academic-standard tables or use of LateX.
-
-It is still useful, however, to be able to communicate descriptive statistics about data.
+Sometimes, you just want to share a small table or data frame, and make it look presentable to a colleague or PI.
 
 There are countless R packages to help do this. Today, we're looking at the `gt` package. It's simple to use and it's very easy to create good-looking tables using it.
 
@@ -445,15 +443,15 @@ Simply do one of these!
 
 
 ``` r
-reg_example_ht &lt;- huxtable::huxreg(reg_example)
+reg_example_sg &lt;- stargazer::stargazer(reg_example)
+# Many options to make prettier
 ```
 
 OR
 
 
 ``` r
-reg_example_sg &lt;- stargazer::stargazer(reg_example)
-# Many options to make prettier
+reg_example_ht &lt;- huxtable::huxreg(reg_example)
 ```
 
 ]
@@ -465,6 +463,29 @@ reg_example_sg &lt;- stargazer::stargazer(reg_example)
 ### Regression Table — Step by Step
 
 .panelset[
+
+.panel[.panel-name[Export Stargazer Table]
+
+
+``` r
+# You can export a LateX script using the 'writeLines' function
+
+writeLines(
+    reg_example_sg,
+    "filepath/filepath/filepath/reg_example_sg.tex"
+)
+```
+
+To visualize your table, the easiest solution is to:
+
+- Create a free Overleaf account on [overleaf.com](https://www.overleaf.com)
+- Open a new document
+- Copy/paste your .tex output in between the `begin{document}` and `end{document}` lines
+- Click compile and then save!
+
+You can also install the `tinytex` package and use `pdftolatex` to save a PDF file.
+
+]
 
 .panel[.panel-name[Export Huxtable Table]
 
@@ -490,45 +511,25 @@ Some simple options for the Huxtable table:
 
 ]
 
-.panel[.panel-name[Export Stargazer Table]
-
-
-``` r
-# You can export a LateX script using the 'writeLines' function
-
-writeLines(
-    reg_example_sg,
-    "filepath/filepath/filepath/reg_example_sg.tex"
-)
-```
-
-To visualize your table, the easiest solution is to:
-
-- Create a free Overleaf account on [overleaf.com](https://www.overleaf.com)
-- Open a new document
-- Copy/paste your .tex output in between the `begin{document}` and `end{document}` lines
-- Click compile and then save!
-
-You can also install the `tinytex` package and use `pdftolatex` to save a PDF file.
-
-]
-
 ]
 
 ---
 
 class: center, middle
 
-## Practical Exercise — Using the World Values Survey Dataset
+## Practical Exercise
+### Using the World Values Survey Dataset
 
 ---
-&lt;font size='+3'&gt;&lt;b&gt;World Values Survey&lt;/b&gt;&lt;/font&gt;
 
-&lt;font size='+2'&gt;&lt;b&gt;Background&lt;/b&gt;&lt;/font&gt;
-&lt;br&gt; &lt;br&gt;
+class: middle
+
+## The World Values Survey
+
+.block-blue[
 *"The survey, which started in 1981, seeks to use the most rigorous, high-quality research designs in each country. The WVS consists of nationally representative surveys conducted in almost 100 countries which contain almost 90 percent of the world’s population, using a common questionnaire. [...] WVS seeks to help scientists and policy makers understand changes in the beliefs, values and motivations of people throughout the world."*
+]
 
-&lt;font size='+2'&gt;&lt;b&gt;Survey Contents&lt;/b&gt;&lt;/font&gt;
 .pull-left[
 - Social values, attitudes &amp; stereotypes
 - Societal well-being
@@ -555,9 +556,11 @@ class: center, middle
 
 1. Download the required data for this session from [this Dropbox folder](https://www.dropbox.com/scl/fo/6m5hzlrc82i04oi0qoam7/h?rlkey=ctf6b0stve3vgbck9ka7mj5ia&amp;st=x9y9ce88&amp;dl=0)
 
-2. Successfully run the code in the `session_2.R` script
+2. Open your project in RStudio, either by (1) opening RStudio using your .rproj file or (2) clicking on "File", "Open Project", and then navigating to your .rproj file within Rstudio
 
-3. Attempt the challenges at the bottom of the script!
+3. Successfully run the code in the `session_2.R` script
+
+4. Attempt the challenges at the bottom of the script!
 
 ---
 
@@ -569,7 +572,7 @@ class: middle
 
 Marek Hlavac, **[“stargazer: beautiful LATEX, HTML and ASCII tables from R statistical output”](https://cran.rproject.org/web/packages/stargazer/vignettes/stargazer.pdf)**
 
-Thomas Mock, **[“gt - a (G)rammar of (T)ables”](https://themockup.blog/posts/2020-05-16-gt-a-grammer-of-tables/)**
+Thomas Mock, **[“gt - a (G)rammar of (T)ables”](https://themockup.blog/posts/2020-05-16-gt-a-grammar-of-tables/)**
 
 &lt;ins&gt;**Plots**&lt;/ins&gt;
 

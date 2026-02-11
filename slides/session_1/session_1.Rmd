@@ -662,7 +662,8 @@ Solutions:
 
 class: center, middle
 
-## Practical Exercise — Using the World Values Survey Dataset
+## Practical Exercise
+### Using the World Values Survey Dataset
 
 ---
 
